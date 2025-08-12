@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrudClinic - Sistema de Citas Médicas</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 1200px; }
+        .card { margin-bottom: 20px; }
+        .hidden { display: none; }
+        .nav-tabs .nav-link { cursor: pointer; }
+        .table-responsive { max-height: 500px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid p-0">
+        <!-- Header -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <span class="navbar-brand">🏥 CrudClinic</span>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3" id="userInfo"></span>
+                    <button class="btn btn-outline-light btn-sm" onclick="cerrarSesion()">Cerrar Sesión</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Login Form -->
+        <div class="container mt-5" id="loginSection">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">🔐 Iniciar Sesión</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Usuario:</label>
+                                    <input type="text" class="form-control" id="username" placeholder="admin" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Contraseña:</label>
+                                    <input type="password" class="form-control" id="password" placeholder="admin123" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
+                            </form>
+                            <div class="mt-3 text-center">
+                                <small class="text-muted">
+                                    Usuario demo: <strong>admin</strong> / Contraseña: <strong>admin123</strong>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="container mt-4 hidden" id="dashboardSection">
+            <!-- Tabs de navegación -->
+            <ul class="nav nav-tabs" id="mainTabs">
+                <li class="nav-item">
+                    <a class="nav-link active" data-tab="appointments">📅 Citas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-tab="patients">👥 Pacientes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-tab="doctors">👨‍⚕️ Doctores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-tab="queries">📊 Consultas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-tab="upload">📁 Cargar CSV</a>
+                </li>
+            </ul>
+
+            <!-- Contenido de las tabs -->
+            <div class="tab-content mt-3">
+                <!-- Tab de Citas -->
+                <div class="tab-pane active" id="appointments">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">📅 Gestión de Citas</h5>
+                            <button class="btn btn-success btn-sm" onclick="mostrarModalCita()">➕ Nueva Cita</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Paciente</th>
+                                            <th>Doctor</th>
+                                            <th>Especialidad</th>
+                                            <th>Fecha</th>
+                                            <th>Hora</th>
+                                            <th>Estado</th>
+                                            <th>Pago</th>
+                                            <th>Monto</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="appointmentsTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Pacientes -->
+                <div class="tab-pane" id="patients">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">👥 Gestión de Pacientes</h5>
+                            <button class="btn btn-success btn-sm" onclick="mostrarModalPaciente()">➕ Nuevo Paciente</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Teléfono</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="patientsTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Doctores -->
+                <div class="tab-pane" id="doctors">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">👨‍⚕️ Gestión de Doctores</h5>
+                            <button class="btn btn-success btn-sm" onclick="mostrarModalDoctor()">➕ Nuevo Doctor</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Especialidad</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="doctorsTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Consultas -->
+                <div class="tab-pane" id="queries">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6>🔍 Citas por Doctor y Fecha</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Doctor:</label>
+                                        <select class="form-select" id="queryDoctor"></select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha Inicio:</label>
+                                        <input type="date" class="form-control" id="queryStartDate">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha Fin:</label>
+                                        <input type="date" class="form-control" id="queryEndDate">
+                                    </div>
+                                    <button class="btn btn-primary" onclick="consultarCitasPorDoctor()">Consultar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6>💰 Ingresos por Método de Pago</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha Inicio:</label>
+                                        <input type="date" class="form-control" id="incomeStartDate">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha Fin:</label>
+                                        <input type="date" class="form-control" id="incomeEndDate">
+                                    </div>
+                                    <button class="btn btn-primary" onclick="consultarIngresos()">Consultar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6>📊 Resultados de Consultas</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="queryResults"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab de Carga CSV -->
+                <div class="tab-pane" id="upload">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">📁 Cargar Pacientes desde CSV</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="csvForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Archivo CSV:</label>
+                                    <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Cargar CSV</button>
+                            </form>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    El archivo CSV debe tener las columnas: name, email, phone
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Citas -->
+    <div class="modal fade" id="citaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="citaModalTitle">Nueva Cita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="citaForm">
+                        <input type="hidden" id="citaId">
+                        <div class="mb-3">
+                            <label class="form-label">Paciente:</label>
+                            <select class="form-select" id="citaPatient" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Doctor:</label>
+                            <select class="form-select" id="citaDoctor" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha:</label>
+                            <input type="date" class="form-control" id="citaDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hora:</label>
+                            <input type="time" class="form-control" id="citaTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estado:</label>
+                            <select class="form-select" id="citaStatus" required>
+                                <option value="programada">Programada</option>
+                                <option value="completada">Completada</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Método de Pago:</label>
+                            <select class="form-select" id="citaPayment" required>
+                                <option value="efectivo">Efectivo</option>
+                                <option value="tarjeta">Tarjeta</option>
+                                <option value="seguro">Seguro</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Monto:</label>
+                            <input type="number" class="form-control" id="citaAmount" step="0.01" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarCita()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Pacientes -->
+    <div class="modal fade" id="pacienteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pacienteModalTitle">Nuevo Paciente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="pacienteForm">
+                        <input type="hidden" id="pacienteId">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre:</label>
+                            <input type="text" class="form-control" id="pacienteName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="pacienteEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono:</label>
+                            <input type="text" class="form-control" id="pacientePhone">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarPaciente()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Doctores -->
+    <div class="modal fade" id="doctorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="doctorModalTitle">Nuevo Doctor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="doctorForm">
+                        <input type="hidden" id="doctorId">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre:</label>
+                            <input type="text" class="form-control" id="doctorName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Especialidad:</label>
+                            <input type="text" class="form-control" id="doctorSpecialty" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarDoctor()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Variables globales
+        let currentUser = null;
+        let appointments = [];
+        let patients = [];
+        let doctors = [];
+
+        // ===== FUNCIONES DE AUTENTICACIÓN =====
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.user;
+                    mostrarDashboard();
+                    cargarDatos();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        });
+
+        // Cerrar sesión
+        function cerrarSesion() {
+            currentUser = null;
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // Mostrar dashboard
+        function mostrarDashboard() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('userInfo').textContent = `👤 ${currentUser.username} (${currentUser.role})`;
+        }
+
+        // ===== FUNCIONES DE NAVEGACIÓN =====
+
+        // Cambiar tabs
+        document.querySelectorAll('[data-tab]').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Ocultar todas las tabs
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+                document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+                
+                // Mostrar tab seleccionada
+                const targetTab = e.target.getAttribute('data-tab');
+                document.getElementById(targetTab).classList.add('active');
+                e.target.classList.add('active');
+            });
+        });
+
+        // ===== FUNCIONES DE CARGA DE DATOS =====
+
+        // Cargar todos los datos
+        async function cargarDatos() {
+            await Promise.all([
+                cargarCitas(),
+                cargarPacientes(),
+                cargarDoctores()
+            ]);
+        }
+
+        // Cargar citas
+        async function cargarCitas() {
+            try {
+                const response = await fetch('/api/appointments');
+                appointments = await response.json();
+                mostrarCitas();
+            } catch (error) {
+                console.error('Error cargando citas:', error);
+            }
+        }
+
+        // Cargar pacientes
+        async function cargarPacientes() {
+            try {
+                const response = await fetch('/api/patients');
+                patients = await response.json();
+                mostrarPacientes();
+                llenarSelectsPacientes();
+            } catch (error) {
+                console.error('Error cargando pacientes:', error);
+            }
+        }
+
+        // Cargar doctores
+        async function cargarDoctores() {
+            try {
+                const response = await fetch('/api/doctors');
+                doctors = await response.json();
+                mostrarDoctores();
+                llenarSelectsDoctores();
+            } catch (error) {
+                console.error('Error cargando doctores:', error);
+            }
+        }
+
+        // ===== FUNCIONES DE MOSTRAR DATOS =====
+
+        // Mostrar citas
+        function mostrarCitas() {
+            const tbody = document.getElementById('appointmentsTableBody');
+            tbody.innerHTML = appointments.map(cita => `
+                <tr>
+                    <td>${cita.id}</td>
+                    <td>${cita.patient_name}</td>
+                    <td>${cita.doctor_name}</td>
+                    <td>${cita.specialty}</td>
+                    <td>${cita.appointment_date}</td>
+                    <td>${cita.appointment_time}</td>
+                    <td><span class="badge bg-${getStatusColor(cita.status)}">${cita.status}</span></td>
+                    <td>${cita.payment_method}</td>
+                    <td>$${Number(cita.amount).toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editarCita(${cita.id})">✏️</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarCita(${cita.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Mostrar pacientes
+        function mostrarPacientes() {
+            const tbody = document.getElementById('patientsTableBody');
+            tbody.innerHTML = patients.map(paciente => `
+                <tr>
+                    <td>${paciente.id}</td>
+                    <td>${paciente.name}</td>
+                    <td>${paciente.email}</td>
+                    <td>${paciente.phone || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editarPaciente(${paciente.id})">✏️</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarPaciente(${paciente.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Mostrar doctores
+        function mostrarDoctores() {
+            const tbody = document.getElementById('doctorsTableBody');
+            tbody.innerHTML = doctors.map(doctor => `
+                <tr>
+                    <td>${doctor.id}</td>
+                    <td>${doctor.name}</td>
+                    <td>${doctor.specialty}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editarDoctor(${doctor.id})">✏️</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarDoctor(${doctor.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ===== FUNCIONES AUXILIARES =====
+
+        // Obtener color del estado
+        function getStatusColor(status) {
+            const colors = {
+                'programada': 'primary',
+                'completada': 'success',
+                'cancelada': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        // Llenar selects de pacientes
+        function llenarSelectsPacientes() {
+            const selects = ['citaPatient'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Seleccionar paciente</option>' +
+                    patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            });
+        }
+
+        // Llenar selects de doctores
+        function llenarSelectsDoctores() {
+            const selects = ['citaDoctor', 'queryDoctor'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Seleccionar doctor</option>' +
+                    doctors.map(d => `<option value="${d.id}">${d.name} - ${d.specialty}</option>`).join('');
+            });
+        }
+
+        // ===== FUNCIONES DE CITAS =====
+
+        // Mostrar modal de cita
+        function mostrarModalCita(cita = null) {
+            const modal = new bootstrap.Modal(document.getElementById('citaModal'));
+            const title = document.getElementById('citaModalTitle');
+            const form = document.getElementById('citaForm');
+            
+            form.reset();
+            document.getElementById('citaId').value = '';
+            
+            if (cita) {
+                title.textContent = 'Editar Cita';
+                document.getElementById('citaId').value = cita.id;
+                document.getElementById('citaPatient').value = cita.patient_id;
+                document.getElementById('citaDoctor').value = cita.doctor_id;
+                document.getElementById('citaDate').value = cita.appointment_date;
+                document.getElementById('citaTime').value = cita.appointment_time;
+                document.getElementById('citaStatus').value = cita.status;
+                document.getElementById('citaPayment').value = cita.payment_method;
+                document.getElementById('citaAmount').value = cita.amount;
+            } else {
+                title.textContent = 'Nueva Cita';
+            }
+            
+            modal.show();
+        }
+
+        // Guardar cita
+        async function guardarCita() {
+            const citaId = document.getElementById('citaId').value;
+            const citaData = {
+                patient_id: document.getElementById('citaPatient').value,
+                doctor_id: document.getElementById('citaDoctor').value,
+                appointment_date: document.getElementById('citaDate').value,
+                appointment_time: document.getElementById('citaTime').value,
+                status: document.getElementById('citaStatus').value,
+                payment_method: document.getElementById('citaPayment').value,
+                amount: document.getElementById('citaAmount').value
+            };
+
+            try {
+                const url = citaId ? `/api/appointments/${citaId}` : '/api/appointments';
+                const method = citaId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(citaData)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('citaModal')).hide();
+                    await cargarCitas();
+                    alert(citaId ? 'Cita actualizada' : 'Cita creada');
+                } else {
+                    alert('Error guardando cita');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        // Editar cita
+        function editarCita(id) {
+            const cita = appointments.find(c => c.id === id);
+            if (cita) mostrarModalCita(cita);
+        }
+
+        // Eliminar cita
+        async function eliminarCita(id) {
+            if (!confirm('¿Estás seguro de eliminar esta cita?')) return;
+            
+            try {
+                const response = await fetch(`/api/appointments/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    await cargarCitas();
+                    alert('Cita eliminada');
+                } else {
+                    alert('Error eliminando cita');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        // ===== FUNCIONES DE PACIENTES =====
+
+        // Mostrar modal de paciente
+        function mostrarModalPaciente(paciente = null) {
+            const modal = new bootstrap.Modal(document.getElementById('pacienteModal'));
+            const title = document.getElementById('pacienteModalTitle');
+            const form = document.getElementById('pacienteForm');
+            
+            form.reset();
+            document.getElementById('pacienteId').value = '';
+            
+            if (paciente) {
+                title.textContent = 'Editar Paciente';
+                document.getElementById('pacienteId').value = paciente.id;
+                document.getElementById('pacienteName').value = paciente.name;
+                document.getElementById('pacienteEmail').value = paciente.email;
+                document.getElementById('pacientePhone').value = paciente.phone || '';
+            } else {
+                title.textContent = 'Nuevo Paciente';
+            }
+            
+            modal.show();
+        }
+
+        // Guardar paciente
+        async function guardarPaciente() {
+            const pacienteId = document.getElementById('pacienteId').value;
+            const pacienteData = {
+                name: document.getElementById('pacienteName').value,
+                email: document.getElementById('pacienteEmail').value,
+                phone: document.getElementById('pacientePhone').value
+            };
+
+            try {
+                const url = pacienteId ? `/api/patients/${pacienteId}` : '/api/patients';
+                const method = pacienteId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pacienteData)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('pacienteModal')).hide();
+                    await cargarPacientes();
+                    alert(pacienteId ? 'Paciente actualizado' : 'Paciente creado');
+                } else {
+                    alert('Error guardando paciente');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        // Editar paciente
+        function editarPaciente(id) {
+            const paciente = patients.find(p => p.id === id);
+            if (paciente) mostrarModalPaciente(paciente);
+        }
+
+        // Eliminar paciente
+        async function eliminarPaciente(id) {
+            if (!confirm('¿Estás seguro de eliminar este paciente?')) return;
+            
+            try {
+                const response = await fetch(`/api/patients/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    await cargarPacientes();
+                    alert('Paciente eliminado');
+                } else {
+                    alert('Error eliminando paciente');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        // ===== FUNCIONES DE DOCTORES =====
+
+        // Mostrar modal de doctor
+        function mostrarModalDoctor(doctor = null) {
+            const modal = new bootstrap.Modal(document.getElementById('doctorModal'));
+            const title = document.getElementById('doctorModalTitle');
+            const form = document.getElementById('doctorForm');
+            
+            form.reset();
+            document.getElementById('doctorId').value = '';
+            
+            if (doctor) {
+                title.textContent = 'Editar Doctor';
+                document.getElementById('doctorId').value = doctor.id;
+                document.getElementById('doctorName').value = doctor.name;
+                document.getElementById('doctorSpecialty').value = doctor.specialty;
+            } else {
+                title.textContent = 'Nuevo Doctor';
+            }
+            
+            modal.show();
+        }
+
+        // Guardar doctor
+        async function guardarDoctor() {
+            const doctorId = document.getElementById('doctorId').value;
+            const doctorData = {
+                name: document.getElementById('doctorName').value,
+                specialty: document.getElementById('doctorSpecialty').value
+            };
+
+            try {
+                const url = doctorId ? `/api/doctors/${doctorId}` : '/api/doctors';
+                const method = doctorId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(doctorData)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('doctorModal')).hide();
+                    await cargarDoctores();
+                    alert(doctorId ? 'Doctor actualizado' : 'Doctor creado');
+                } else {
+                    alert('Error guardando doctor');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        // Editar doctor
+        function editarDoctor(id) {
+            const doctor = doctors.find(d => d.id === id);
+            if (doctor) mostrarModalDoctor(doctor);
+        }
+
+        // Eliminar doctor
+        async function eliminarDoctor(id) {
+            if (!confirm('¿Estás seguro de eliminar este doctor?')) return;
+            
+            try {
+                const response = await fetch(`/api/doctors/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    await cargarDoctores();
+                    alert('Doctor eliminado');
+                } else {
+                    alert('Error eliminando doctor');
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        // ===== FUNCIONES DE CONSULTAS =====
+
+        // Consultar citas por doctor
+        async function consultarCitasPorDoctor() {
+            const doctorId = document.getElementById('queryDoctor').value;
+            const startDate = document.getElementById('queryStartDate').value;
+            const endDate = document.getElementById('queryEndDate').value;
+
+            if (!doctorId || !startDate || !endDate) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/queries/appointments-by-doctor?doctorId=${doctorId}&startDate=${startDate}&endDate=${endDate}`);
+                const data = await response.json();
+                
+                mostrarResultadosConsulta('Citas por Doctor', data);
+            } catch (error) {
+                alert('Error en la consulta');
+            }
+        }
+
+        // Consultar ingresos
+        async function consultarIngresos() {
+            const startDate = document.getElementById('incomeStartDate').value;
+            const endDate = document.getElementById('incomeEndDate').value;
+
+            if (!startDate || !endDate) {
+                alert('Por favor completa las fechas');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/queries/income-by-payment?startDate=${startDate}&endDate=${endDate}`);
+                const data = await response.json();
+                
+                mostrarResultadosConsulta('Ingresos por Método de Pago', data);
+            } catch (error) {
+                alert('Error en la consulta');
+            }
+        }
+
+        // Mostrar resultados de consultas
+        function mostrarResultadosConsulta(titulo, datos) {
+            const resultsDiv = document.getElementById('queryResults');
+            
+            if (datos.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-muted">No se encontraron resultados</p>';
+                return;
+            }
+
+            const columns = Object.keys(datos[0]);
+            const table = `
+                <h6>${titulo}</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead class="table-dark">
+                            <tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>
+                            ${datos.map(row => `
+                                <tr>${columns.map(col => `<td>${row[col]}</td>`).join('')}</tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = table;
+        }
+
+        // ===== FUNCIONES DE CSV =====
+
+        // Cargar CSV
+        document.getElementById('csvForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Por favor selecciona un archivo');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('csvFile', file);
+
+            try {
+                const response = await fetch('/api/upload-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                alert(data.message);
+                
+                if (response.ok) {
+                    fileInput.value = '';
+                    await cargarPacientes();
+                }
+            } catch (error) {
+                alert('Error cargando CSV');
+            }
+        });
+
+        // ===== INICIALIZACIÓN =====
+
+        // Establecer fechas por defecto
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('queryStartDate').value = today;
+            document.getElementById('queryEndDate').value = today;
+            document.getElementById('incomeStartDate').value = today;
+            document.getElementById('incomeEndDate').value = today;
+        });
+    </script>
+</body>
+</html>
