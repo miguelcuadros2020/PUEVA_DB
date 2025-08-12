@@ -1,0 +1,20 @@
+{
+  "name": "crudclinic-backend",
+  "version": "1.0.0",
+  "description": "CrudClinic API (Express + PostgreSQL)",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "load:csv": "node src/scripts/load-csv.js --file=./data/appointments.csv"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.11.5"
+  }
+}
+
+

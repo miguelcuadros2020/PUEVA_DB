@@ -1,0 +1,9 @@
+{
+  "name": "json-table-converter",
+  "version": "1.0.0",
+  "description": "Función que convierte JSON a tablas HTML con Bootstrap",
+  "main": "src/converter.js",
+  "keywords": ["json", "html", "table", "bootstrap"],
+  "author": "CrudClinic Team",
+  "license": "MIT"
+}

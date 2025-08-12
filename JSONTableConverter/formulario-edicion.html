@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Edición Dinámico</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .container { max-width: 800px; }
+        .card { margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .btn-group { margin-top: 20px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Formulario de búsqueda -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4>Buscar Registro</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">ID del Registro:</label>
+                            <input type="text" class="form-control" id="searchId" placeholder="Ingresa el ID">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-primary w-100" onclick="buscarRegistro()">
+                                🔍 Buscar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de edición -->
+        <div class="card hidden" id="formularioEdicion">
+            <div class="card-header bg-success text-white">
+                <h4>Editar Registro</h4>
+            </div>
+            <div class="card-body">
+                <div id="camposDinamicos">
+                    <!-- Los campos se generan dinámicamente aquí -->
+                </div>
+                
+                <div class="btn-group w-100">
+                    <button class="btn btn-success" onclick="guardarCambios()">
+                        💾 Guardar Cambios
+                    </button>
+                    <button class="btn btn-secondary" onclick="cancelarEdicion()">
+                        ❌ Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mensajes -->
+        <div id="mensajes"></div>
+    </div>
+
+    <script>
+        let registroActual = null;
+        let camposOriginales = null;
+
+        // Función para buscar registro por ID
+        async function buscarRegistro() {
+            const id = document.getElementById('searchId').value.trim();
+            
+            if (!id) {
+                mostrarMensaje('Por favor ingresa un ID', 'warning');
+                return;
+            }
+
+            try {
+                mostrarMensaje('Buscando registro...', 'info');
+                
+                // Aquí cambia la URL por tu backend
+                const response = await axios.get(`/api/registros/${id}`);
+                
+                if (response.data && response.data.success) {
+                    registroActual = response.data.data;
+                    camposOriginales = JSON.parse(JSON.stringify(registroActual));
+                    mostrarFormularioEdicion();
+                    mostrarMensaje('Registro encontrado', 'success');
+                } else {
+                    mostrarMensaje('No se encontró el registro', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error al buscar:', error);
+                mostrarMensaje('Error al buscar el registro', 'danger');
+            }
+        }
+
+        // Función para mostrar el formulario de edición
+        function mostrarFormularioEdicion() {
+            const formulario = document.getElementById('formularioEdicion');
+            const camposDiv = document.getElementById('camposDinamicos');
+            
+            // Limpiar campos anteriores
+            camposDiv.innerHTML = '';
+            
+            // Generar campos dinámicamente
+            Object.keys(registroActual).forEach(key => {
+                if (key !== 'id') { // No mostrar el campo ID para editar
+                    const campo = crearCampo(key, registroActual[key]);
+                    camposDiv.appendChild(campo);
+                }
+            });
+            
+            formulario.classList.remove('hidden');
+        }
+
+        // Función para crear un campo de formulario
+        function crearCampo(nombre, valor) {
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            
+            let inputHtml = '';
+            const tipo = determinarTipoCampo(valor);
+            
+            if (tipo === 'textarea') {
+                inputHtml = `<textarea class="form-control" id="campo_${nombre}" rows="3">${valor || ''}</textarea>`;
+            } else if (tipo === 'select') {
+                inputHtml = `<select class="form-control" id="campo_${nombre}">${generarOpcionesSelect(nombre, valor)}</select>`;
+            } else if (tipo === 'checkbox') {
+                inputHtml = `<input type="checkbox" class="form-check-input" id="campo_${nombre}" ${valor ? 'checked' : ''}>`;
+            } else {
+                inputHtml = `<input type="${tipo}" class="form-control" id="campo_${nombre}" value="${valor || ''}">`;
+            }
+            
+            div.innerHTML = `
+                <label class="form-label">${formatearNombreCampo(nombre)}:</label>
+                ${inputHtml}
+            `;
+            
+            return div;
+        }
+
+        // Función para determinar el tipo de campo
+        function determinarTipoCampo(valor) {
+            if (typeof valor === 'boolean') return 'checkbox';
+            if (typeof valor === 'number') return 'number';
+            if (typeof valor === 'string') {
+                if (valor.includes('@') && valor.includes('.')) return 'email';
+                if (valor.startsWith('http')) return 'url';
+                if (valor.length > 100) return 'textarea';
+                return 'text';
+            }
+            return 'text';
+        }
+
+        // Función para generar opciones de select (ejemplo para campos específicos)
+        function generarOpcionesSelect(nombre, valorActual) {
+            const opciones = {
+                'estado': ['activo', 'inactivo', 'pendiente'],
+                'categoria': ['A', 'B', 'C', 'Premium'],
+                'tipo': ['usuario', 'admin', 'moderador']
+            };
+            
+            if (opciones[nombre]) {
+                return opciones[nombre].map(opcion => 
+                    `<option value="${opcion}" ${opcion === valorActual ? 'selected' : ''}>${opcion}</option>`
+                ).join('');
+            }
+            
+            return `<option value="${valorActual}">${valorActual}</option>`;
+        }
+
+        // Función para formatear nombres de campos
+        function formatearNombreCampo(nombre) {
+            return nombre
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, char => char.toUpperCase());
+        }
+
+        // Función para guardar cambios
+        async function guardarCambios() {
+            try {
+                // Recopilar datos del formulario
+                const datosActualizados = { ...registroActual };
+                
+                Object.keys(registroActual).forEach(key => {
+                    if (key !== 'id') {
+                        const elemento = document.getElementById(`campo_${key}`);
+                        if (elemento) {
+                            if (elemento.type === 'checkbox') {
+                                datosActualizados[key] = elemento.checked;
+                            } else {
+                                datosActualizados[key] = elemento.value;
+                            }
+                        }
+                    }
+                });
+                
+                // Verificar si hay cambios
+                if (JSON.stringify(datosActualizados) === JSON.stringify(camposOriginales)) {
+                    mostrarMensaje('No hay cambios para guardar', 'info');
+                    return;
+                }
+                
+                mostrarMensaje('Guardando cambios...', 'info');
+                
+                // Aquí cambia la URL por tu backend
+                const response = await axios.put(`/api/registros/${registroActual.id}`, datosActualizados);
+                
+                if (response.data && response.data.success) {
+                    mostrarMensaje('Cambios guardados exitosamente', 'success');
+                    registroActual = datosActualizados;
+                    camposOriginales = JSON.parse(JSON.stringify(registroActual));
+                } else {
+                    mostrarMensaje('Error al guardar los cambios', 'danger');
+                }
+                
+            } catch (error) {
+                console.error('Error al guardar:', error);
+                mostrarMensaje('Error al guardar los cambios', 'danger');
+            }
+        }
+
+        // Función para cancelar edición
+        function cancelarEdicion() {
+            document.getElementById('formularioEdicion').classList.add('hidden');
+            document.getElementById('searchId').value = '';
+            registroActual = null;
+            camposOriginales = null;
+            mostrarMensaje('Edición cancelada', 'info');
+        }
+
+        // Función para mostrar mensajes
+        function mostrarMensaje(texto, tipo) {
+            const mensajesDiv = document.getElementById('mensajes');
+            const alerta = document.createElement('div');
+            alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+            alerta.innerHTML = `
+                ${texto}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            mensajesDiv.innerHTML = '';
+            mensajesDiv.appendChild(alerta);
+            
+            // Auto-ocultar después de 5 segundos
+            setTimeout(() => {
+                if (alerta.parentNode) {
+                    alerta.remove();
+                }
+            }, 5000);
+        }
+
+        // Configurar Axios (opcional)
+        axios.defaults.baseURL = 'http://localhost:3000'; // Cambia por tu URL base
+        axios.defaults.headers.common['Content-Type'] = 'application/json';
+    </script>
+</body>
+</html>
